@@ -1,28 +1,7 @@
-import Cors from 'cors';
-
-// Initialize the CORS middleware
-const cors = Cors({
-  methods: ['GET', 'POST', 'OPTIONS'], // Allow specific HTTP methods
-  origin: '*', // Allow all origins, or specify a domain like 'http://example.com'
-});
-
-function runMiddleware(req, res, fn) {
-  return new Promise((resolve, reject) => {
-    fn(req, res, (result) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
-}
-
-export async function POST(req, res) {
-  // Run the CORS middleware
-  await runMiddleware(req, res, cors);
-
+export async function POST(request) {
   try {
-    const data = await req.json();
+    // Parse the JSON data from the request
+    const data = await request.json();
     const { ip, ipLatitude, ipLongitude, gpsLatitude, gpsLongitude, city } = data;
 
     // Log the details
@@ -32,19 +11,27 @@ export async function POST(req, res) {
     console.log('GPS-Based Latitude/Longitude:', gpsLatitude || 'Not Available', gpsLongitude || 'Not Available');
 
     // Respond with success
-    return res.status(200).json({
-      message: 'Details logged successfully!',
-      data: {
-        ip,
-        ipLatitude,
-        ipLongitude,
-        gpsLatitude: gpsLatitude || 'Not Available',
-        gpsLongitude: gpsLongitude || 'Not Available',
-        city: city || 'Not Provided',
-      },
-    });
+    return new Response(
+      JSON.stringify({
+        message: 'Details logged successfully!',
+        data: {
+          ip,
+          ipLatitude,
+          ipLongitude,
+          gpsLatitude: gpsLatitude || 'Not Available',
+          gpsLongitude: gpsLongitude || 'Not Available',
+          city: city || 'Not Provided',
+        },
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
     console.error('Error logging details:', error);
-    return res.status(500).json({ message: 'Failed to log details', error: error.message });
+
+    // Respond with an error
+    return new Response(
+      JSON.stringify({ message: 'Failed to log details', error: error.message }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }
