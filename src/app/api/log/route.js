@@ -8,6 +8,7 @@ export async function POST(request) {
     console.log('IP Address:', ip);
     console.log('IP-Based Latitude/Longitude:', ipLatitude, ipLongitude);
     console.log('City (IP-Based):', city || 'Not Provided');
+    console.log('GPS-Based Latitude/Longitude:', gpsLatitude || 'Not Available', gpsLongitude || 'Not Available');
 
     // Respond with success
     return new Response(
