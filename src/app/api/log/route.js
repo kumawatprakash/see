@@ -1,5 +1,17 @@
 export async function POST(request) {
   try {
+    // Allow cross-origin requests
+    const headers = {
+      'Access-Control-Allow-Origin': '*', // You can restrict this to specific domains like 'https://your-frontend-domain.com'
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',  // Allow specific HTTP methods
+      'Access-Control-Allow-Headers': 'Content-Type',  // Allow specific headers
+    };
+
+    // Preflight request handling for OPTIONS method
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 200, headers });
+    }
+
     // Parse the JSON data from the request
     const data = await request.json();
     const { ip, ipLatitude, ipLongitude, gpsLatitude, gpsLongitude, city } = data;
@@ -23,7 +35,7 @@ export async function POST(request) {
           city: city || 'Not Provided',
         },
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200, headers: { 'Content-Type': 'application/json', ...headers } }
     );
   } catch (error) {
     console.error('Error logging details:', error);
