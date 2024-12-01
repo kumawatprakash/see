@@ -1,19 +1,28 @@
-export async function POST(request) {
+import Cors from 'cors';
+
+// Initialize the CORS middleware
+const cors = Cors({
+  methods: ['GET', 'POST', 'OPTIONS'], // Allow specific HTTP methods
+  origin: '*', // Allow all origins, or specify a domain like 'http://example.com'
+});
+
+function runMiddleware(req, res, fn) {
+  return new Promise((resolve, reject) => {
+    fn(req, res, (result) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
+  });
+}
+
+export async function POST(req, res) {
+  // Run the CORS middleware
+  await runMiddleware(req, res, cors);
+
   try {
-    // Allow cross-origin requests
-    const headers = {
-      'Access-Control-Allow-Origin': '*', // You can restrict this to specific domains like 'https://your-frontend-domain.com'
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',  // Allow specific HTTP methods
-      'Access-Control-Allow-Headers': 'Content-Type',  // Allow specific headers
-    };
-
-    // Preflight request handling for OPTIONS method
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 200, headers });
-    }
-
-    // Parse the JSON data from the request
-    const data = await request.json();
+    const data = await req.json();
     const { ip, ipLatitude, ipLongitude, gpsLatitude, gpsLongitude, city } = data;
 
     // Log the details
@@ -23,27 +32,19 @@ export async function POST(request) {
     console.log('GPS-Based Latitude/Longitude:', gpsLatitude || 'Not Available', gpsLongitude || 'Not Available');
 
     // Respond with success
-    return new Response(
-      JSON.stringify({
-        message: 'Details logged successfully!',
-        data: {
-          ip,
-          ipLatitude,
-          ipLongitude,
-          gpsLatitude: gpsLatitude || 'Not Available',
-          gpsLongitude: gpsLongitude || 'Not Available',
-          city: city || 'Not Provided',
-        },
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json', ...headers } }
-    );
+    return res.status(200).json({
+      message: 'Details logged successfully!',
+      data: {
+        ip,
+        ipLatitude,
+        ipLongitude,
+        gpsLatitude: gpsLatitude || 'Not Available',
+        gpsLongitude: gpsLongitude || 'Not Available',
+        city: city || 'Not Provided',
+      },
+    });
   } catch (error) {
     console.error('Error logging details:', error);
-
-    // Respond with an error
-    return new Response(
-      JSON.stringify({ message: 'Failed to log details', error: error.message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return res.status(500).json({ message: 'Failed to log details', error: error.message });
   }
 }
